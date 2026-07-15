@@ -12,6 +12,7 @@ await rm('dist/assets', { recursive: true, force: true });
 await mkdir('dist/assets', { recursive: true });
 
 await cp('dist/game', 'dist/assets/game', { recursive: true });
+await rm('dist/game', { recursive: true, force: true });
 let main = await readFile('dist/main.js', 'utf8');
 main = removeStyleOnlyImports(main, './ui/styles.css');
 await writeFile('dist/assets/main.js', main);
