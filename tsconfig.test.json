@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":false,"outDir":"dist-test","module":"NodeNext","moduleResolution":"NodeNext","types":[]},"include":["src/game/data/**/*.ts","src/game/systems/**/*.ts","src/game/types/**/*.ts","src/game/utils/**/*.ts","src/test/**/*.ts"]}
