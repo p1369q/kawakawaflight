@@ -2,13 +2,18 @@ import { mkdir, rm, cp, readFile, writeFile } from 'node:fs/promises';
 
 const base = '/kawakawaflight/';
 
+function removeStyleOnlyImports(source, specifier) {
+  const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return source.replace(new RegExp(`^\\s*import\\s+['\"]${escaped}['\"]\\s*;\\s*(?:\\r?\\n)?`, 'gm'), '');
+}
+
 await rm('dist/src', { recursive: true, force: true });
 await rm('dist/assets', { recursive: true, force: true });
 await mkdir('dist/assets', { recursive: true });
 
 await cp('dist/game', 'dist/assets/game', { recursive: true });
 let main = await readFile('dist/main.js', 'utf8');
-main = main.replace(/^import ['\"]\.\/ui\/styles\.css['\"];\n?/, '');
+main = removeStyleOnlyImports(main, './ui/styles.css');
 await writeFile('dist/assets/main.js', main);
 await cp('src/ui/styles.css', 'dist/assets/styles.css');
 
