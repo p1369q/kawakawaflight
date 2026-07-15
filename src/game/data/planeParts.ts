@@ -1,0 +1,14 @@
+import type { BodyId, ColorId, EngineId, PlaneSelection, StatKey, Stats, WingId } from '../types/game.js';
+import { clamp } from '../utils/clamp.js';
+export interface Part<T extends string>{id:T;name:string;description:string;stats:Stats;shape:number}
+const base:Stats={speed:3,lift:3,control:3,energy:3};
+export const bodies:Part<BodyId>[]=[{id:'round',name:'まるまるボディ',description:'バランスよく とびやすい',stats:{speed:0,lift:0,control:1,energy:0},shape:0},{id:'speed',name:'スピードボディ',description:'すいすい はやい',stats:{speed:1,lift:-1,control:0,energy:0},shape:1},{id:'large',name:'おおきなボディ',description:'ながく とべる',stats:{speed:-1,lift:0,control:0,energy:1},shape:2}];
+export const wings:Part<WingId>[]=[{id:'wide',name:'ひろびろウイング',description:'ふわっと あんてい',stats:{speed:0,lift:1,control:1,energy:0},shape:0},{id:'swift',name:'スピードウイング',description:'まっすぐ はやい',stats:{speed:1,lift:-1,control:0,energy:0},shape:1},{id:'float',name:'ふわふわウイング',description:'ゆっくり おりる',stats:{speed:-1,lift:1,control:0,energy:1},shape:2}];
+export const engines:Part<EngineId>[]=[{id:'gentle',name:'やさしいエンジン',description:'そうじゅう かんたん',stats:{speed:0,lift:0,control:1,energy:0},shape:0},{id:'power',name:'パワーエンジン',description:'ぐんぐん すすむ',stats:{speed:1,lift:0,control:0,energy:-1},shape:1},{id:'eco',name:'エコエンジン',description:'ながく たのしい',stats:{speed:-1,lift:0,control:0,energy:2},shape:2}];
+export const colors:{id:ColorId;name:string;hex:number;css:string}[]=[{id:'red',name:'あか',hex:0xff6b6b,css:'#ff6b6b'},{id:'blue',name:'あお',hex:0x3fa7ff,css:'#3fa7ff'},{id:'yellow',name:'きいろ',hex:0xffd93d,css:'#ffd93d'},{id:'green',name:'みどり',hex:0x67d66f,css:'#67d66f'},{id:'purple',name:'むらさき',hex:0xa779ff,css:'#a779ff'},{id:'orange',name:'オレンジ',hex:0xff9f43,css:'#ff9f43'}];
+export const defaultSelection:PlaneSelection={body:'round',wing:'wide',engine:'gentle',color:'blue'};
+export function getPart<T extends string>(parts:Part<T>[], id:T):Part<T>{return parts.find(p=>p.id===id)??parts[0];}
+export function calculateStats(sel:PlaneSelection):Stats{const list=[getPart(bodies,sel.body),getPart(wings,sel.wing),getPart(engines,sel.engine)]; const out={...base}; for(const p of list){(Object.keys(out) as StatKey[]).forEach(k=>out[k]+=p.stats[k]);} (Object.keys(out) as StatKey[]).forEach(k=>out[k]=clamp(out[k],1,5)); return out;}
+export function randomSelection(rand:()=>number=Math.random):PlaneSelection{return{body:bodies[Math.floor(rand()*bodies.length)].id,wing:wings[Math.floor(rand()*wings.length)].id,engine:engines[Math.floor(rand()*engines.length)].id,color:colors[Math.floor(rand()*colors.length)].id};}
+export function nextId<T extends string>(parts:Part<T>[], current:T, dir:1|-1):T{const i=parts.findIndex(p=>p.id===current); return parts[(i+dir+parts.length)%parts.length].id;}
+export function statStars(v:number):string{return '★★★★★'.slice(0,v)+'☆☆☆☆☆'.slice(0,5-v)}

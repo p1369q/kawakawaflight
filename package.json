@@ -1,0 +1,13 @@
+{
+  "name": "kawakawa-flight",
+  "version": "0.1.0",
+  "private": true,
+  "description": "かわかわふらいと",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "build": "tsc && node scripts/build.mjs",
+    "test": "npm run build && node --experimental-specifier-resolution=node src/test/runTests.mjs"
+  },
+  "devDependencies": {}
+}
