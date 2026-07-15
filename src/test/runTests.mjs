@@ -5,7 +5,7 @@ import { buildResult, judgeRating } from '../../dist/assets/game/systems/ResultS
 const stats=calculateStats(defaultSelection); assert.deepEqual(stats,{speed:3,lift:4,control:5,energy:3});
 for(const body of ['round','speed','large']) for(const wing of ['wide','swift','float']) for(const engine of ['gentle','power','eco']){const s=calculateStats({body,wing,engine,color:'blue'}); Object.values(s).forEach(v=>assert.ok(v>=1&&v<=5));}
 assert.equal(randomSelection(()=>0).body,'round'); assert.equal(randomSelection(()=>0.99).engine,'eco');
-assert.equal(normalizeSave('bad').selection.body,'round'); assert.equal(normalizeSave({version:0,selection:{body:'speed',wing:'swift',engine:'eco',color:'red'},bestDistance:5}).version,1);
+assert.equal(normalizeSave('bad').selection.body,'round'); assert.equal(normalizeSave({version:0,selection:{body:'speed',wing:'swift',engine:'eco',color:'red'},bestDistance:5}).version,2);
 assert.equal(judgeRating({body:'large',wing:'float',engine:'eco',color:'green'},1000,3,0),'エコフライト名人');
 const save=normalizeSave({bestDistance:10,bestStars:1,bestGoldStars:0}); const r=buildResult(defaultSelection,20.7,2,1,3,save); assert.equal(r.isBestDistance,true); assert.equal(r.distance,20);
 console.log('logic tests passed');
@@ -20,3 +20,15 @@ for (const r of [simulateFlight({...base,wingWidth:5,throwPower:'strong'}), simu
 const cmp=compareWithReal(sameA,{distance:1,time:1,traits:['急に落ちた','左へ曲がった'],throwPower:'normal',memo:''}); assert.ok(cmp.suggestions.some(s=>s.includes('つばさ'))); assert.ok(cmp.different.includes('急に落ちた'));
 const migrated=normalizeSave({version:1,bestDistance:3}); assert.deepEqual(migrated.researchRecords,[]); assert.equal(migrated.researchBestDistance,0);
 console.log('research tests passed');
+import { rankForPoints, updateMissions, discoverCards, makeSavedPlane, autoPlaneName, diffResults, settingsKey, canAward, pointsFor } from '../../dist/assets/game/systems/ResearchProgression.js';
+assert.equal(rankForPoints(0),'かけだし研究員'); assert.equal(rankForPoints(100),'紙ひこうき研究員'); assert.equal(rankForPoints(900),'かわかわマスター');
+const cardSettings={...base,basePlane:'glider',wingWidth:5,throwPower:'gentle'}; const simWide=simulateFlight(cardSettings); const gotCards=discoverCards(cardSettings,simWide,[]); assert.ok(gotCards.some(c=>c.id==='float-combo'||c.id==='wide-slow'));
+let mission=updateMissions(normalizeSave({}).missions,{settings:{...base,balance:'leftUp'},result:simulateFlight({...base,balance:'leftUp'}),triedTypes:['speed','glider','balance'],cardCount:5}); assert.ok(mission.completed.some(m=>m.id==='turn-left')); assert.ok(mission.completed.some(m=>m.id==='three-types')); assert.ok(mission.completed.some(m=>m.id==='cards5'));
+assert.equal(canAward('firstSim',[]),true); assert.equal(canAward('firstSim',['firstSim']),false); assert.equal(pointsFor('firstSim'),10); assert.equal(settingsKey(base),settingsKey({...base}));
+const plane=makeSavedPlane({id:'p1',name:autoPlaneName(0),settings:base,result:sameA,now:'2026-07-15T00:00:00.000Z'}); assert.equal(plane.name,'そらかぜ1号'); assert.equal(plane.simulationHistory.length,1);
+const save20=normalizeSave({savedPlanes:Array.from({length:25},(_,i)=>({...plane,id:'p'+i,name:'n'+i}))}); assert.equal(save20.savedPlanes.length,20);
+const renamed={...plane,name:'新しい名前'}; assert.equal(renamed.name,'新しい名前');
+const d=diffResults(sameA,simulateFlight({...base,wingWidth:5})); assert.ok(typeof d.distance==='number'); assert.ok(d.tradeoff.length>0);
+const migrated2=normalizeSave({version:1,bestDistance:7,researchRecords:[{id:'old',settings:base,simulation:sameA,createdAt:'x',bestDistance:4}]}); assert.equal(migrated2.version,2); assert.equal(migrated2.bestDistance,7); assert.equal(migrated2.researchRecords.length,1); assert.equal(migrated2.researchPoints,0);
+assert.deepEqual(simulateFlight({...base,wingWidth:2,throwPower:'strong'}),simulateFlight({...base,wingWidth:2,throwPower:'strong'}));
+console.log('progression tests passed');
