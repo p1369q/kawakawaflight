@@ -8,3 +8,10 @@ export interface SimulationResult{distanceRange:[number,number];timeRange:[numbe
 export interface RealResult{distance?:number;time?:number;traits:string[];throwPower:ThrowPower;memo:string}
 export interface ComparisonResult{distanceDiff?:number;predicted:string[];actual:string[];matched:string[];different:string[];suggestions:string[]}
 export interface ResearchRecord{id:string;settings:ResearchSettings;simulation:SimulationResult;real?:RealResult;comparison?:ComparisonResult;createdAt:string;bestDistance:number}
+export type ResearchRank='かけだし研究員'|'紙ひこうき研究員'|'フライト技師'|'空気の博士'|'かわかわマスター';
+export interface MissionState{id:string;title:string;description:string;progress:number;goal:number;reward:number;completed:boolean;completedAt?:string}
+export interface DiscoveryCard{id:string;title:string;icon:string;description:string;condition:string;earnedAt:string}
+export interface SavedPlane{id:string;name:string;basePlane:BasePlaneId;settings:ResearchSettings;createdAt:string;updatedAt:string;improvementCount:number;simulationHistory:SimulationResult[];realHistory:RealResult[];bestDistance:number;bestTime:number;titles:string[];favorite:boolean}
+export interface ImprovementDelta{distance:number;time:number;speed:number;stability:number;stall:number;turn:number;tradeoff:string}
+export interface LastResearchSession{settings:ResearchSettings;result?:SimulationResult;planeId?:string;changedKeys:string[];previousResult?:SimulationResult;earnedPoints:number;earnedCards:DiscoveryCard[];completedMissions:MissionState[];delta?:ImprovementDelta}
+export interface ImprovementEntry{planeId:string;at:string;changedKeys:string[];delta:ImprovementDelta}
