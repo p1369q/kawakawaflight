@@ -5,7 +5,7 @@ import { buildResult, judgeRating } from '../../dist/assets/game/systems/ResultS
 const stats=calculateStats(defaultSelection); assert.deepEqual(stats,{speed:3,lift:4,control:5,energy:3});
 for(const body of ['round','speed','large']) for(const wing of ['wide','swift','float']) for(const engine of ['gentle','power','eco']){const s=calculateStats({body,wing,engine,color:'blue'}); Object.values(s).forEach(v=>assert.ok(v>=1&&v<=5));}
 assert.equal(randomSelection(()=>0).body,'round'); assert.equal(randomSelection(()=>0.99).engine,'eco');
-assert.equal(normalizeSave('bad').selection.body,'round'); assert.equal(normalizeSave({version:0,selection:{body:'speed',wing:'swift',engine:'eco',color:'red'},bestDistance:5}).version,4);
+assert.equal(normalizeSave('bad').selection.body,'round'); assert.equal(normalizeSave({version:0,selection:{body:'speed',wing:'swift',engine:'eco',color:'red'},bestDistance:5}).version,5);
 assert.equal(judgeRating({body:'large',wing:'float',engine:'eco',color:'green'},1000,3,0),'エコフライト名人');
 const save=normalizeSave({bestDistance:10,bestStars:1,bestGoldStars:0}); const r=buildResult(defaultSelection,20.7,2,1,3,save); assert.equal(r.isBestDistance,true); assert.equal(r.distance,20);
 console.log('logic tests passed');
@@ -29,7 +29,7 @@ const plane=makeSavedPlane({id:'p1',name:autoPlaneName(0),settings:base,result:s
 const save20=normalizeSave({savedPlanes:Array.from({length:25},(_,i)=>({...plane,id:'p'+i,name:'n'+i}))}); assert.equal(save20.savedPlanes.length,20);
 const renamed={...plane,name:'新しい名前'}; assert.equal(renamed.name,'新しい名前');
 const d=diffResults(sameA,simulateFlight({...base,wingWidth:5})); assert.ok(typeof d.distance==='number'); assert.ok(d.tradeoff.length>0);
-const migrated2=normalizeSave({version:1,bestDistance:7,researchRecords:[{id:'old',settings:base,simulation:sameA,createdAt:'x',bestDistance:4}]}); assert.equal(migrated2.version,4); assert.equal(migrated2.bestDistance,7); assert.equal(migrated2.researchRecords.length,1); assert.equal(migrated2.researchPoints,0);
+const migrated2=normalizeSave({version:1,bestDistance:7,researchRecords:[{id:'old',settings:base,simulation:sameA,createdAt:'x',bestDistance:4}]}); assert.equal(migrated2.version,5); assert.equal(migrated2.bestDistance,7); assert.equal(migrated2.researchRecords.length,1); assert.equal(migrated2.researchPoints,0);
 assert.deepEqual(simulateFlight({...base,wingWidth:2,throwPower:'strong'}),simulateFlight({...base,wingWidth:2,throwPower:'strong'}));
 console.log('progression tests passed');
 import { addMaterial, calculatePlaneStats, canCraft, craftPart, createDigGrid, emptyMaterials, improvementSuggestions, missionCatalog2, partCatalog, rewardForCell, testFlight, updateBuildMissions, getBuildEmptyState, craftReadiness } from '../../dist/assets/game/systems/BuildGame.js';
@@ -39,7 +39,7 @@ let inv=emptyMaterials(); inv=addMaterial(inv,'wood',2); inv=addMaterial(inv,'sc
 assert.equal(canCraft(emptyMaterials(),partCatalog.powerEngine).ok,false); assert.ok(canCraft(emptyMaterials(),partCatalog.powerEngine).missing.length>0); assert.equal(getBuildEmptyState(normalizeSave({})), 'noMaterials'); assert.ok(craftReadiness(emptyMaterials(), partCatalog.powerEngine).some(r=>!r.ok&&r.ratio===0));
 const buildPlane={body:'lightBody',wing:'wideWing',tail:'steadyTail',engine:'smallEngine',propeller:'woodProp',tire:'smallTire'}; const ps=calculatePlaneStats(buildPlane); assert.ok(ps.speed>1&&ps.straight>1&&ps.endurance>1); const fr=testFlight(buildPlane); assert.ok(fr.distance>=10); assert.ok(!/失敗|ゲームオーバー/.test(fr.note+fr.good+fr.advice));
 const sug=improvementSuggestions({}); assert.equal(sug.length,3); assert.equal(sug[0].title,'つばさを広くする');
-const buildSave=normalizeSave({version:1,materials:{wood:4},currentPlane:buildPlane,craftedParts:{wideWing:1}}); assert.equal(buildSave.version,4); assert.equal(buildSave.materials.wood,4); assert.deepEqual(buildSave.researchRecords,[]);
+const buildSave=normalizeSave({version:1,materials:{wood:4},currentPlane:buildPlane,craftedParts:{wideWing:1}}); assert.equal(buildSave.version,5); assert.equal(buildSave.materials.wood,4); assert.deepEqual(buildSave.researchRecords,[]);
 const progressed=updateBuildMissions(buildSave,{type:'flight',value:12}); assert.ok(progressed.some(m=>m.id==='wood3'&&m.completed)); assert.ok(progressed.some(m=>m.id==='firstPlane'&&m.completed)); assert.ok(progressed.some(m=>m.id==='fly10'&&m.completed)); assert.equal(missionCatalog2.length>=5,true);
 console.log('build-game tests passed');
 
@@ -50,7 +50,37 @@ for(let i=0;i<20;i++){const q=generateQuizQuestion('easy',200+i,i); if(q.categor
 const sess=startQuizSession('easy',55); assert.equal(sess.questionIds.length,5); const q0=generateQuizQuestion('easy',55,0); const ans=answerQuestion(sess,q0.answerIndex); assert.equal(ans.correctCount,1); assert.equal(ans.streak,1);
 let wrong=answerQuestion(sess,(q0.answerIndex+1)%q0.choices.length); assert.equal(wrong.correctCount,0); const minReward=calculateQuizReward(0,0); assert.ok(Object.values(minReward.materials).some(n=>n>0));
 const streakReward=calculateQuizReward(3,3); assert.ok(streakReward.fragments>=1); assert.ok(streakReward.materials.screw>=1);
-const fullReward=calculateQuizReward(5,5); assert.ok(fullReward.fragments>=1); let quizSave=normalizeSave({version:3,materials:{wood:4},savedBuildPlanes:[{id:'b',name:'n',parts:{},stats:{speed:1,straight:1,tough:1,endurance:1},flightCount:0,bestDistance:0,bestTime:0,createdAt:'x',updatedAt:'x'}]}); assert.equal(quizSave.version,4); assert.equal(quizSave.materials.wood,4); assert.equal(quizSave.savedBuildPlanes.length,1);
+const fullReward=calculateQuizReward(5,5); assert.ok(fullReward.fragments>=1); let quizSave=normalizeSave({version:3,materials:{wood:4},savedBuildPlanes:[{id:'b',name:'n',parts:{},stats:{speed:1,straight:1,tough:1,endurance:1},flightCount:0,bestDistance:0,bestTime:0,createdAt:'x',updatedAt:'x'}]}); assert.equal(quizSave.version,5); assert.equal(quizSave.materials.wood,4); assert.equal(quizSave.savedBuildPlanes.length,1);
 const merged=mergeQuizReward(quizSave,{...fullReward,fragments:5}); assert.ok(merged.unlockedBlueprints.includes('wideWing')); assert.ok(merged.unlockedBlueprints.includes('powerEngine')); assert.ok(blueprintCatalog.length>=2);
 const mid=answerQuestion(startQuizSession('challenge',77),0); const resumed=normalizeSave({currentQuizSession:mid}); assert.equal(resumed.currentQuizSession.currentIndex,1); assert.equal(resumed.currentQuizSession.completed,false);
 console.log('quiz tests passed');
+
+import { flightLocations, flightStyles, hasCompletedPlane, saveFlightRecord, selectablePlanes, simulateFlightRecord, updateFlightMissions } from '../../dist/assets/game/systems/FlightSystem.js';
+const completePlane={body:'lightBody',wing:'wideWing',tail:'steadyTail',engine:'smallEngine',propeller:'woodProp',tire:'smallTire'};
+const incompletePlane={body:'lightBody'};
+assert.equal(hasCompletedPlane(completePlane), true);
+assert.equal(hasCompletedPlane(incompletePlane), false);
+const savedComplete={id:'plane-a',name:'テスト号',parts:completePlane,stats:calculatePlaneStats(completePlane),flightCount:0,bestDistance:0,bestTime:0,createdAt:'2026-07-16T00:00:00.000Z',updatedAt:'2026-07-16T00:00:00.000Z'};
+const savedIncomplete={...savedComplete,id:'plane-b',parts:incompletePlane};
+const flightSave=normalizeSave({materials:{wood:4},craftedParts:{wideWing:1},currentPlane:completePlane,savedBuildPlanes:[savedComplete,savedIncomplete],flightRecords:[{id:'old',planeId:'plane-a',location:'grass',style:'straight',distance:9,time:2,maxHeight:3,evaluation:'ok',createdAt:'x'}]});
+assert.equal(flightSave.materials.wood,4);
+assert.equal(flightSave.flightRecords.length,1);
+assert.deepEqual(selectablePlanes(flightSave).map(p=>p.id), ['plane-a']);
+assert.ok(flightLocations.grass.distance < flightLocations.mountain.distance);
+assert.ok(flightLocations.beach.wind > flightLocations.grass.wind);
+assert.ok(flightStyles.fast.speed > flightStyles.straight.speed);
+assert.ok(flightStyles.high.height > flightStyles.straight.height);
+const recA=simulateFlightRecord({plane:savedComplete,location:'grass',style:'straight',now:'2026-07-16T00:00:00.000Z'});
+const recB=simulateFlightRecord({plane:savedComplete,location:'grass',style:'straight',now:'2026-07-16T00:00:00.000Z'});
+assert.deepEqual(recA,recB);
+const recMountain=simulateFlightRecord({plane:savedComplete,location:'mountain',style:'fast',now:'2026-07-16T00:00:00.000Z'});
+assert.ok(recMountain.distance >= recA.distance);
+const patch=saveFlightRecord(flightSave,recA);
+assert.equal(patch.flightRecords[0].id,recA.id);
+assert.equal(patch.totalFlights,1);
+assert.equal(patch.savedBuildPlanes.find(p=>p.id==='plane-a').flightCount,1);
+assert.equal(patch.bestDistanceByPlane['plane-a'],recA.distance);
+assert.ok(updateFlightMissions({...flightSave,...patch},recA).some(m=>m.id==='firstFlight'&&m.completed));
+assert.ok(updateFlightMissions({...flightSave,...patch},recA).some(m=>m.id==='grassFlight'&&m.completed));
+assert.equal(selectablePlanes(normalizeSave({savedBuildPlanes:[]})).length,0);
+console.log('flight menu tests passed');
