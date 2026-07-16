@@ -2,7 +2,7 @@ export type BodyId='round'|'speed'|'large'; export type WingId='wide'|'swift'|'f
 export type StatKey='speed'|'lift'|'control'|'energy'; export type Stats=Record<StatKey,number>;
 export interface PlaneSelection{body:BodyId;wing:WingId;engine:EngineId;color:ColorId}
 import type { DiscoveryCard, ImprovementEntry, LastResearchSession, MissionState, ResearchRank, ResearchRecord, SavedPlane } from './research.js';
-export type MaterialId='wood'|'metal'|'screw'|'cloth'|'propeller'|'engine'|'lightMetal'|'strongWing';
+export type MaterialId='wood'|'metal'|'screw'|'cloth'|'propeller'|'engine'|'lightMetal'|'strongWing'|'blueprintFragment'|'materialFragment';
 export type QuizDifficulty='easy'|'challenge';
 export interface QuizSession{seed:number;difficulty:QuizDifficulty;questionIds:string[];currentIndex:number;correctCount:number;streak:number;bestStreak:number;answers:{questionId:string;correct:boolean;choiceIndex:number}[];startedAt:string;completed:boolean}
 export interface QuizStats{sessions:number;answered:number;completedSets:number;bestStreak:number;correctTotal:number}

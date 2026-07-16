@@ -8,7 +8,9 @@ export const materials:Record<MaterialId,{name:string;icon:string;description:st
   propeller:{name:'プロペラ部品',icon:'propeller',description:'風を作って前へ進むよ',uses:'プロペラ'},
   engine:{name:'エンジン部品',icon:'engine',description:'飛行機をぐんぐん動かすよ',uses:'エンジン'},
   lightMetal:{name:'けいりょう金属',icon:'lightMetal',description:'軽くてはやいレア材料',uses:'軽い部品',rare:true},
-  strongWing:{name:'じょうぶな羽根材',icon:'strongWing',description:'長く飛べるレア材料',uses:'つばさ・しっぽ',rare:true}
+  strongWing:{name:'じょうぶな羽根材',icon:'strongWing',description:'長く飛べるレア材料',uses:'つばさ・しっぽ',rare:true},
+  blueprintFragment:{name:'設計図のかけら',icon:'blueprintFragment',description:'新しい作り方をひらめく手がかり',uses:'クイズ・研究',rare:true},
+  materialFragment:{name:'ざいりょうのかけら',icon:'materialFragment',description:'集めるといろいろな材料の代わりになるよ',uses:'発掘・クイズ'}
 };
 export const materialIds=Object.keys(materials) as MaterialId[];
 export const emptyMaterials=()=>Object.fromEntries(materialIds.map(id=>[id,0])) as Record<MaterialId,number>;
@@ -29,7 +31,7 @@ export const partCatalog:Record<BuildPartId,BuiltPart>={
 export const categories:PartCategory[]=['body','wing','tail','engine','propeller','tire'];
 export const categoryNames:Record<PartCategory,string>={body:'どうたい',wing:'つばさ',tail:'しっぽ',engine:'エンジン',propeller:'プロペラ',tire:'タイヤ'};
 export function createDigGrid(seed=1):DigCell[]{const cells:DigCell[]=[]; for(let i=0;i<16;i++){const r=(Math.sin(seed+i*9.7)+1)/2; const type=r>.76?'hard':r>.28?'normal':'soft'; cells.push({id:i,type,hp:{soft:2,normal:3,hard:4}[type],maxHp:{soft:2,normal:3,hard:4}[type],sparkle:i%7===seed%7||r>.9,revealed:false});} return cells;}
-export function rewardForCell(cell:DigCell, seed=1):MaterialId|null{const n=(Math.sin((cell.id+1)*(seed+3))*10000)%1; if(Math.abs(n)<.22&&!cell.sparkle)return null; const pool:MaterialId[]=cell.sparkle?['lightMetal','strongWing','engine','propeller','metal','screw']:['wood','wood','metal','screw','cloth','propeller','engine']; return pool[Math.floor(Math.abs(n)*pool.length)%pool.length];}
+export function rewardForCell(cell:DigCell, seed=1):MaterialId|null{const n=(Math.sin((cell.id+1)*(seed+3))*10000)%1; if(Math.abs(n)<.22&&!cell.sparkle)return null; const pool:MaterialId[]=cell.sparkle?['lightMetal','strongWing','blueprintFragment','engine','propeller','metal','screw']:['wood','wood','metal','screw','cloth','propeller','engine','materialFragment']; return pool[Math.floor(Math.abs(n)*pool.length)%pool.length];}
 export function addMaterial(inv:Record<MaterialId,number>, id:MaterialId, count=1){return {...inv,[id]:(inv[id]??0)+count};}
 export function canCraft(inv:Record<MaterialId,number>, part:BuiltPart){const missing=Object.entries(part.recipe).filter(([id,n])=>(inv[id as MaterialId]??0)<(n??0)); return {ok:missing.length===0,missing};}
 export function craftPart(inv:Record<MaterialId,number>, crafted:Partial<Record<BuildPartId,number>>, id:BuildPartId){const part=partCatalog[id], check=canCraft(inv,part); if(!check.ok)return {ok:false,inventory:inv,crafted,missing:check.missing}; const next={...inv}; Object.entries(part.recipe).forEach(([k,v])=>next[k as MaterialId]-=v??0); return {ok:true,inventory:next,crafted:{...crafted,[id]:(crafted[id]??0)+1},missing:[]};}
@@ -41,3 +43,15 @@ export function improvementSuggestions(plane:CurrentPlane){return [
   {title:'どうたいを軽くする',category:'body' as PartCategory,before:plane.body?partCatalog[plane.body].name:'なし',after:'かるいどうたい'}].slice(0,3);}
 export const missionCatalog2:MissionState2[]=[{id:'wood3',title:'木材を3こあつめよう',goal:3,progress:0,completed:false},{id:'wing1',title:'つばさを1こつくろう',goal:1,progress:0,completed:false},{id:'firstPlane',title:'はじめてのひこうきをつくろう',goal:1,progress:0,completed:false},{id:'fly10',title:'10mとばしてみよう',goal:10,progress:0,completed:false},{id:'engineSwap',title:'エンジンをつけかえよう',goal:1,progress:0,completed:false},{id:'quiz1',title:'クイズを1かいやってみよう',goal:1,progress:0,completed:false},{id:'quiz3',title:'3もんこたえよう',goal:3,progress:0,completed:false},{id:'quiz5',title:'5もんさいごまでやってみよう',goal:1,progress:0,completed:false},{id:'quizStreak3',title:'3もんれんぞくでこたえよう',goal:1,progress:0,completed:false},{id:'blueprint1',title:'せっけいずを1まいあつめよう',goal:1,progress:0,completed:false}];
 export function updateBuildMissions(save:SaveData, event:{type:string; value?:number}){return save.buildMissions.map(m=>{let p=m.progress; if(m.id==='wood3')p=save.materials.wood; if(m.id==='wing1')p=Object.keys(save.craftedParts).some(id=>partCatalog[id as BuildPartId]?.category==='wing')?1:0; if(m.id==='firstPlane')p=categories.every(c=>save.currentPlane[c])?1:0; if(m.id==='fly10'&&event.type==='flight')p=Math.max(p,event.value??0); if(m.id==='engineSwap'&&event.type==='engineSwap')p=1; return {...m,progress:Math.min(m.goal,p),completed:p>=m.goal};});}
+
+
+export type EmptyStateKind='noMaterials'|'noCraftableParts'|'planeIncomplete'|'noSavedPlanes'|'noResearchRecords'|'audioUnavailable'|'storageUnavailable'|'startupFailed'|'migrationFilled';
+export function getBuildEmptyState(save:SaveData):EmptyStateKind|null{
+  if(!Object.values(save.materials).some(v=>v>0))return 'noMaterials';
+  if(!Object.values(partCatalog).some(part=>canCraft(save.materials,part).ok)&&!Object.values(save.craftedParts).some(v=>(v??0)>0))return 'noCraftableParts';
+  if(!categories.every(c=>save.currentPlane[c]))return 'planeIncomplete';
+  return null;
+}
+export function craftReadiness(inv:Record<MaterialId,number>, part:BuiltPart){
+  return Object.entries(part.recipe).map(([id,need])=>{const have=inv[id as MaterialId]??0; return {id:id as MaterialId,need:need??0,have,ok:have>=(need??0),ratio:Math.min(1,have/(need??1))};});
+}
