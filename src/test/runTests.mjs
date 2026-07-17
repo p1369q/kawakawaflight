@@ -55,7 +55,7 @@ const merged=mergeQuizReward(quizSave,{...fullReward,fragments:5}); assert.ok(me
 const mid=answerQuestion(startQuizSession('challenge',77),0); const resumed=normalizeSave({currentQuizSession:mid}); assert.equal(resumed.currentQuizSession.currentIndex,1); assert.equal(resumed.currentQuizSession.completed,false);
 console.log('quiz tests passed');
 
-import { flightLocations, flightStyles, hasCompletedPlane, saveFlightRecord, selectablePlanes, simulateFlightRecord, updateFlightMissions } from '../../dist/assets/game/systems/FlightSystem.js';
+import { flightAnimationDuration, flightLocations, flightStyles, flightVisualPhase, hasCompletedPlane, saveFlightRecord, selectablePlanes, simulateFlightRecord, updateFlightMissions } from '../../dist/assets/game/systems/FlightSystem.js';
 const completePlane={body:'lightBody',wing:'wideWing',tail:'steadyTail',engine:'smallEngine',propeller:'woodProp',tire:'smallTire'};
 const incompletePlane={body:'lightBody'};
 assert.equal(hasCompletedPlane(completePlane), true);
@@ -73,6 +73,12 @@ assert.ok(flightStyles.high.height > flightStyles.straight.height);
 const recA=simulateFlightRecord({plane:savedComplete,location:'grass',style:'straight',now:'2026-07-16T00:00:00.000Z'});
 const recB=simulateFlightRecord({plane:savedComplete,location:'grass',style:'straight',now:'2026-07-16T00:00:00.000Z'});
 assert.deepEqual(recA,recB);
+assert.equal(flightVisualPhase(0,5000),'takeoff');
+assert.equal(flightVisualPhase(1200,5000),'cruise');
+assert.equal(flightVisualPhase(4300,5000),'landing');
+assert.equal(flightVisualPhase(5000,5000),'complete');
+assert.equal(flightAnimationDuration(recA,true),900);
+assert.ok(flightAnimationDuration({...recA,time:9})>flightAnimationDuration({...recA,time:3}));
 const recMountain=simulateFlightRecord({plane:savedComplete,location:'mountain',style:'fast',now:'2026-07-16T00:00:00.000Z'});
 assert.ok(recMountain.distance >= recA.distance);
 const patch=saveFlightRecord(flightSave,recA);

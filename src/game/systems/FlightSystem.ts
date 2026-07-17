@@ -11,6 +11,21 @@ export const flightStyles:Record<FlightStyleId,{id:FlightStyleId;name:string;des
   high:{id:'high',name:'たかく とばす',description:'ぐんと上がって、風をつかまえるよ',distance:.98,time:1.12,height:1.35,speed:.94,path:'M10 62 C35 18 80 18 112 54'},
   fast:{id:'fast',name:'はやく とばす',description:'スピードを出して遠くをめざすよ',distance:1.15,time:.9,height:.9,speed:1.22,path:'M10 60 C45 44 82 42 114 36'}
 };
+
+export type FlightVisualPhase='countdown'|'takeoff'|'cruise'|'landing'|'complete';
+/** A deterministic, child-friendly timeline: even a short flight shows takeoff and landing. */
+export function flightAnimationDuration(record:Pick<FlightRecord,'time'>, reducedMotion=false){
+  if(reducedMotion)return 900;
+  return Math.round(Math.max(4200,Math.min(7600,4200+(record.time-3)*420)));
+}
+export function flightVisualPhase(elapsed:number,total:number):FlightVisualPhase{
+  if(elapsed<0)return 'countdown';
+  if(elapsed<1050)return 'takeoff';
+  if(elapsed<total-1150)return 'cruise';
+  if(elapsed<total)return 'landing';
+  return 'complete';
+}
+
 export function hasCompletedPlane(plane:CurrentPlane){return categories.every(c=>!!plane[c]);}
 export function selectablePlanes(save:SaveData){return save.savedBuildPlanes.filter(p=>hasCompletedPlane(p.parts));}
 export function simulateFlightRecord(args:{plane:SavedBuildPlane;location:FlightLocationId;style:FlightStyleId;now?:string;}):FlightRecord{
