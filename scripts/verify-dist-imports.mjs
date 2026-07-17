@@ -50,9 +50,10 @@ async function exists(path) {
 }
 
 function htmlAssetToDistPath(asset) {
-  if (asset.startsWith(basePath)) return resolve(distDir, asset.slice(basePath.length));
-  if (asset.startsWith('/')) return null;
-  return resolve(dirname(indexHtml), asset);
+  const path = asset.split('?')[0].split('#')[0];
+  if (path.startsWith(basePath)) return resolve(distDir, path.slice(basePath.length));
+  if (path.startsWith('/')) return null;
+  return resolve(dirname(indexHtml), path);
 }
 
 const failures = [];
