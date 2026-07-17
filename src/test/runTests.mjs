@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
-import { calculateStats, defaultSelection, randomSelection } from '../../dist/assets/game/data/planeParts.js';
-import { normalizeSave } from '../../dist/assets/game/systems/SaveSystem.js';
-import { buildResult, judgeRating } from '../../dist/assets/game/systems/ResultSystem.js';
+import { readdir } from 'node:fs/promises';
+
+const assetVersions = (await readdir(new URL('../../dist/assets/', import.meta.url), { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+assert.equal(assetVersions.length, 1, 'dist must contain exactly one versioned asset directory');
+const assetRoot = `../../dist/assets/${assetVersions[0]}`;
+const fromAssets = (path) => import(`${assetRoot}/${path}`);
+const { calculateStats, defaultSelection, randomSelection } = await fromAssets('game/data/planeParts.js');
+const { normalizeSave } = await fromAssets('game/systems/SaveSystem.js');
+const { buildResult, judgeRating } = await fromAssets('game/systems/ResultSystem.js');
 const stats=calculateStats(defaultSelection); assert.deepEqual(stats,{speed:3,lift:4,control:5,energy:3});
 for(const body of ['round','speed','large']) for(const wing of ['wide','swift','float']) for(const engine of ['gentle','power','eco']){const s=calculateStats({body,wing,engine,color:'blue'}); Object.values(s).forEach(v=>assert.ok(v>=1&&v<=5));}
 assert.equal(randomSelection(()=>0).body,'round'); assert.equal(randomSelection(()=>0.99).engine,'eco');
@@ -9,7 +17,7 @@ assert.equal(normalizeSave('bad').selection.body,'round'); assert.equal(normaliz
 assert.equal(judgeRating({body:'large',wing:'float',engine:'eco',color:'green'},1000,3,0),'エコフライト名人');
 const save=normalizeSave({bestDistance:10,bestStars:1,bestGoldStars:0}); const r=buildResult(defaultSelection,20.7,2,1,3,save); assert.equal(r.isBestDistance,true); assert.equal(r.distance,20);
 console.log('logic tests passed');
-import { defaultResearchSettings, simulateFlight, compareWithReal } from '../../dist/assets/game/systems/ResearchPhysics.js';
+const { defaultResearchSettings, simulateFlight, compareWithReal } = await fromAssets('game/systems/ResearchPhysics.js');
 const base={...defaultResearchSettings};
 const narrow=simulateFlight({...base,wingWidth:1}); const wide=simulateFlight({...base,wingWidth:5}); assert.ok(wide.timeRange[1]>narrow.timeRange[1]);
 const front=simulateFlight({...base,centerOfGravity:'front'}); const back=simulateFlight({...base,centerOfGravity:'backish'}); assert.ok(front.stability>back.stability); assert.ok(back.stall>front.stall);
@@ -20,7 +28,7 @@ for (const r of [simulateFlight({...base,wingWidth:5,throwPower:'strong'}), simu
 const cmp=compareWithReal(sameA,{distance:1,time:1,traits:['急に落ちた','左へ曲がった'],throwPower:'normal',memo:''}); assert.ok(cmp.suggestions.some(s=>s.includes('つばさ'))); assert.ok(cmp.different.includes('急に落ちた'));
 const migrated=normalizeSave({version:1,bestDistance:3}); assert.deepEqual(migrated.researchRecords,[]); assert.equal(migrated.researchBestDistance,0);
 console.log('research tests passed');
-import { rankForPoints, updateMissions, discoverCards, makeSavedPlane, autoPlaneName, diffResults, settingsKey, canAward, pointsFor } from '../../dist/assets/game/systems/ResearchProgression.js';
+const { rankForPoints, updateMissions, discoverCards, makeSavedPlane, autoPlaneName, diffResults, settingsKey, canAward, pointsFor } = await fromAssets('game/systems/ResearchProgression.js');
 assert.equal(rankForPoints(0),'かけだし研究員'); assert.equal(rankForPoints(100),'紙ひこうき研究員'); assert.equal(rankForPoints(900),'かわかわマスター');
 const cardSettings={...base,basePlane:'glider',wingWidth:5,throwPower:'gentle'}; const simWide=simulateFlight(cardSettings); const gotCards=discoverCards(cardSettings,simWide,[]); assert.ok(gotCards.some(c=>c.id==='float-combo'||c.id==='wide-slow'));
 let mission=updateMissions(normalizeSave({}).missions,{settings:{...base,balance:'leftUp'},result:simulateFlight({...base,balance:'leftUp'}),triedTypes:['speed','glider','balance'],cardCount:5}); assert.ok(mission.completed.some(m=>m.id==='turn-left')); assert.ok(mission.completed.some(m=>m.id==='three-types')); assert.ok(mission.completed.some(m=>m.id==='cards5'));
@@ -32,7 +40,7 @@ const d=diffResults(sameA,simulateFlight({...base,wingWidth:5})); assert.ok(type
 const migrated2=normalizeSave({version:1,bestDistance:7,researchRecords:[{id:'old',settings:base,simulation:sameA,createdAt:'x',bestDistance:4}]}); assert.equal(migrated2.version,5); assert.equal(migrated2.bestDistance,7); assert.equal(migrated2.researchRecords.length,1); assert.equal(migrated2.researchPoints,0);
 assert.deepEqual(simulateFlight({...base,wingWidth:2,throwPower:'strong'}),simulateFlight({...base,wingWidth:2,throwPower:'strong'}));
 console.log('progression tests passed');
-import { addMaterial, calculatePlaneStats, canCraft, craftPart, createDigGrid, emptyMaterials, improvementSuggestions, missionCatalog2, partCatalog, rewardForCell, testFlight, updateBuildMissions, getBuildEmptyState, craftReadiness } from '../../dist/assets/game/systems/BuildGame.js';
+const { addMaterial, calculatePlaneStats, canCraft, craftPart, createDigGrid, emptyMaterials, improvementSuggestions, missionCatalog2, partCatalog, rewardForCell, testFlight, updateBuildMissions, getBuildEmptyState, craftReadiness } = await fromAssets('game/systems/BuildGame.js');
 const grid=createDigGrid(4); assert.equal(grid.length,16); assert.equal(grid.find(c=>c.type==='soft')?.maxHp,2); assert.equal(grid.find(c=>c.type==='normal')?.maxHp,3); assert.equal(grid.find(c=>c.type==='hard')?.maxHp,4);
 assert.ok(grid.map(c=>rewardForCell(c,4)).filter(Boolean).length>=5);
 let inv=emptyMaterials(); inv=addMaterial(inv,'wood',2); inv=addMaterial(inv,'screw',1); assert.equal(inv.wood,2); assert.equal(canCraft(inv,partCatalog.lightBody).ok,true); let crafted=craftPart(inv,{},'lightBody'); assert.equal(crafted.ok,true); assert.equal(crafted.inventory.wood,0); assert.equal(crafted.crafted.lightBody,1);
@@ -43,7 +51,7 @@ const buildSave=normalizeSave({version:1,materials:{wood:4},currentPlane:buildPl
 const progressed=updateBuildMissions(buildSave,{type:'flight',value:12}); assert.ok(progressed.some(m=>m.id==='wood3'&&m.completed)); assert.ok(progressed.some(m=>m.id==='firstPlane'&&m.completed)); assert.ok(progressed.some(m=>m.id==='fly10'&&m.completed)); assert.equal(missionCatalog2.length>=5,true);
 console.log('build-game tests passed');
 
-import { answerQuestion, blueprintCatalog, calculateQuizReward, generateQuizQuestion, mergeQuizReward, startQuizSession } from '../../dist/assets/game/systems/QuizSystem.js';
+const { answerQuestion, blueprintCatalog, calculateQuizReward, generateQuizQuestion, mergeQuizReward, startQuizSession } = await fromAssets('game/systems/QuizSystem.js');
 const eq1=generateQuizQuestion('easy',123,0), eq2=generateQuizQuestion('easy',123,0); assert.deepEqual(eq1,eq2); assert.ok(['かず','かたち','ひらがな','いろ','なかまわけ'].includes(eq1.category));
 const cq=generateQuizQuestion('challenge',123,1); assert.ok(['たしざん','ひきざん','かんじ','とけい','ずけい','ぶんしょう'].includes(cq.category));
 for(let i=0;i<20;i++){const q=generateQuizQuestion('easy',200+i,i); if(q.category==='かず') assert.ok(Number(q.choices[q.answerIndex])>=1&&Number(q.choices[q.answerIndex])<=10); assert.ok(q.choices.length>=2&&q.choices.length<=3);}
@@ -55,7 +63,7 @@ const merged=mergeQuizReward(quizSave,{...fullReward,fragments:5}); assert.ok(me
 const mid=answerQuestion(startQuizSession('challenge',77),0); const resumed=normalizeSave({currentQuizSession:mid}); assert.equal(resumed.currentQuizSession.currentIndex,1); assert.equal(resumed.currentQuizSession.completed,false);
 console.log('quiz tests passed');
 
-import { flightAnimationDuration, flightLocations, flightStyles, flightVisualPhase, hasCompletedPlane, saveFlightRecord, selectablePlanes, simulateFlightRecord, updateFlightMissions } from '../../dist/assets/game/systems/FlightSystem.js';
+const { flightAnimationDuration, flightLocations, flightStyles, flightVisualPhase, hasCompletedPlane, saveFlightRecord, selectablePlanes, simulateFlightRecord, updateFlightMissions } = await fromAssets('game/systems/FlightSystem.js');
 const completePlane={body:'lightBody',wing:'wideWing',tail:'steadyTail',engine:'smallEngine',propeller:'woodProp',tire:'smallTire'};
 const incompletePlane={body:'lightBody'};
 assert.equal(hasCompletedPlane(completePlane), true);
