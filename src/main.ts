@@ -10,6 +10,26 @@ import { answerQuestion, blueprintCatalog, calculateQuizReward, generateQuizQues
 type Screen='title'|'dig'|'quiz'|'quizResult'|'bag'|'craft'|'assemble'|'test'|'flySelect'|'flyLocation'|'flyStyle'|'flyLaunch'|'flyAir'|'flyResult'|'myPlanes'|'records'|'settings'|'research';
 const foundApp=document.getElementById('game-container'); if(!foundApp) throw new Error('game-container element was not found'); const app=foundApp;
 let screen:Screen='title'; let save=SaveSystem.load(); let lastFlight:ReturnType<typeof testFlight>|null=null; let digSeed=Date.now()%999; let hammer=-1;
+type LayoutSize='compact'|'phone'|'tablet'|'desktop';
+function updateViewportLayout(){
+ const viewport=window.visualViewport;
+ const width=Math.round(viewport?.width??window.innerWidth);
+ const height=Math.round(viewport?.height??window.innerHeight);
+ const size:LayoutSize=width<=380?'compact':width<=599?'phone':width<=1023?'tablet':'desktop';
+ document.documentElement.dataset.layout=size;
+ document.documentElement.dataset.orientation=width>height?'landscape':'portrait';
+ document.documentElement.style.setProperty('--visible-height',`${height}px`);
+}
+let viewportTimer:number|undefined;
+function scheduleViewportLayout(){
+ window.clearTimeout(viewportTimer);
+ viewportTimer=window.setTimeout(updateViewportLayout,80);
+}
+updateViewportLayout();
+window.addEventListener('resize',scheduleViewportLayout,{passive:true});
+window.addEventListener('orientationchange',scheduleViewportLayout,{passive:true});
+window.visualViewport?.addEventListener('resize',scheduleViewportLayout,{passive:true});
+new ResizeObserver(scheduleViewportLayout).observe(document.documentElement);
 const partIds=Object.keys(partCatalog) as BuildPartId[]; const jp={speed:'はやさ',straight:'まっすぐ',tough:'つよさ',endurance:'ながくとべる'} as const;
 function btn(label:string, fn:()=>void, cls='primary'){const b=document.createElement('button'); b.className=`game-btn ${cls}`; b.textContent=label; b.onclick=()=>{void AudioSystem.resume(); AudioSystem.play('button'); fn();}; return b;}
 function icon(id:string){return `<svg class="ico ${id}" viewBox="0 0 64 64" aria-hidden="true"><use href="#i-${id}"></use></svg>`}
